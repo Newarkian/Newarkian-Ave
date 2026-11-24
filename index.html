@@ -36,7 +36,6 @@ h1{font-size:clamp(1.6rem,7vw,2.3rem);margin:0;letter-spacing:-.01em;line-height
 .bill{position:absolute;width:46px;height:22px;border-radius:3px;background:#5f9b62;border:1px solid #2f6b3a;color:#e8f3e1;font:600 .7rem "Work Sans",sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(0,0,0,.35)}
 .bill.drop{animation:drop .5s ease-out both}
 @keyframes drop{from{transform:translateY(-60px) rotate(40deg);opacity:0}}
-@media (prefers-reduced-motion:reduce){.bill.drop{animation:none}}
 .pot{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;font-size:1.3rem}.pot .pv{color:var(--lamp)}
 .seat{background:var(--panel);border-radius:10px;padding:14px 16px;margin-bottom:12px;border-left:6px solid var(--brick)}
 .seat.you{border-left-color:var(--lamp)}
@@ -102,7 +101,7 @@ Casino.register({id:"clo",name:"C-Lo",blurb:"Two players, one pot. Throw off the
   let bet=25,phase="bet",pot=0,pend=null,youFirst=false,busy=false,alive=true;
   const who={you:{d:".pd",l:".pres",n:"You"},opp:{d:".bd",l:".bres",n:"Opponent"}};
   const vb=(s,w)=>s==="you"?w:w+"s";
-  root.innerHTML='<div class="stage"><div class="wall">Throw the dice off this wall</div><div class="floor"></div><span class="who l">Opponent</span><span class="who r">You</span></div><div class="pot f"><span>Pot</span><span class="pv">0</span></div><section class="seat"><h2>Opponent <span class="bres">Waiting</span></h2><div class="dice bd"></div></section><section class="seat you"><h2>You <span class="pres">Waiting</span></h2><div class="dice pd"></div></section><div class="msg" aria-live="polite">Pick your ante, then ante up.</div><div class="bets" role="group" aria-label="Bet size"></div><button class="go">Ante up</button><button class="o mute" style="margin-top:10px;width:100%">Sound: on</button><details><summary>How rolls score</summary><p>Each player antes the same bet into the pot. No banker and no third man, just two players. Dice have to hit the wall. 4-5-6, any triple, or a pair with a 6 wins the pot. 1-2-3 or a pair with a 1 loses it. A pair with 2 to 5 sets a point, and anything else rerolls. The first shooter sets the point and the other player throws to beat it. Equal points are a tie: the pot stays and you shoot again. The first shooter switches every round.</p></details>';
+  root.innerHTML='<div class="stage"><div class="wall">Throw the dice off this wall</div><div class="floor"></div><span class="who l">Opponent</span><span class="who r">You</span></div><div class="pot f"><span>Pot</span><span class="pv">0</span></div><section class="seat"><h2>Opponent <span class="bres">Waiting</span></h2><div class="dice bd"></div></section><section class="seat you"><h2>You <span class="pres">Waiting</span></h2><div class="dice pd"></div></section><div class="msg" aria-live="polite">Pick your ante, then ante up.</div><div class="bets" role="group" aria-label="Bet size"></div><button class="go">Ante up</button><button class="o mute" style="margin-top:10px;width:100%">Sound: on</button><button class="o fxb" style="margin-top:10px;width:100%">Motion: on</button><details><summary>How rolls score</summary><p>Each player antes the same bet into the pot. No banker and no third man, just two players. Dice have to hit the wall. 4-5-6, any triple, or a pair with a 6 wins the pot. 1-2-3 or a pair with a 1 loses it. A pair with 2 to 5 sets a point, and anything else rerolls. The first shooter sets the point and the other player throws to beat it. Equal points are a tie: the pot stays and you shoot again. The first shooter switches every round.</p></details>';
   const q=s=>root.querySelector(s),go=q(".go"),betsEl=q(".bets");
   function dieEl(n,sh){const d=document.createElement("div");d.className="die"+(n?"":" empty")+(sh?" shake":"");
     if(n)PIPS[n].forEach(p=>{const[r,c]=p.split("/"),i=document.createElement("i");i.style.setProperty("--a",r+"/"+c);d.appendChild(i)});return d}
@@ -113,11 +112,11 @@ Casino.register({id:"clo",name:"C-Lo",blurb:"Two players, one pot. Throw off the
     if(s[0]===s[1]||s[1]===s[2]){const o=s[0]===s[1]?s[2]:s[0];
       if(o===6)return{t:"win",l:"Point 6"};if(o===1)return{t:"lose",l:"Point 1"};return{t:"point",p:o,l:"Point "+o}}
     return{t:"again",l:"No score"}}
-  let ac=null,muted=false;
+  let ac=null,muted=false,fx=true;
   function tone(f,t,dur,type,vol){if(!ac||muted)return;const o=ac.createOscillator(),g=ac.createGain(),s=ac.currentTime+t;o.type=type||"sine";o.frequency.value=f;g.gain.setValueAtTime(vol||.15,s);g.gain.exponentialRampToValueAtTime(.001,s+dur);o.connect(g);g.connect(ac.destination);o.start(s);o.stop(s+dur)}
   function clack(){for(let i=0;i<5;i++)tone(180+Math.random()*500,.35+i*.09,.05,"square",.08)}
   function sweep(w){const f=q(".floor"),dx=(w==="you"?1:-1)*f.clientWidth*.45;
-    if(matchMedia("(prefers-reduced-motion:reduce)").matches)return drawBills();
+    if(!fx)return drawBills();
     [...f.children].forEach((b,i)=>b.animate([{},{transform:b.style.transform+" translate("+dx+"px,60px)",opacity:0}],{duration:700,delay:i*25,fill:"forwards"}));
     setTimeout(()=>{if(alive)drawBills()},700+f.children.length*25)}
   let shown=0;
@@ -131,7 +130,7 @@ Casino.register({id:"clo",name:"C-Lo",blurb:"Two players, one pot. Throw off the
     d.forEach((n,i)=>{const e=dieEl(n);st.appendChild(e);
       const sx=side==="you"?78:12,wx=38+i*12+Math.random()*6,lx=30+i*14+Math.random()*6,ly=38+Math.random()*28;
       e.style.left=lx+"%";e.style.top=ly+"%";
-      if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+      if(!fx)return;
       e.animate([{left:sx+"%",top:"100%",transform:"rotate(0deg)"},{left:wx+"%",top:"26%",transform:"rotate(300deg)",offset:.45},{left:lx+"%",top:ly+"%",transform:"rotate("+(500+Math.random()*200)+"deg)"}],{duration:900+i*80,easing:"ease-out"})})}
   async function rollFor(dsel,lsel){let j;do{const d=[1,2,3].map(()=>1+Math.floor(Math.random()*6));
     toss(d,dsel===".pd"?"you":"opp");j=judge(d);q(lsel).textContent="Rolling";await sleep(1100);show(dsel,d);if(!alive)return j;q(lsel).textContent=j.l;
@@ -174,8 +173,10 @@ Casino.register({id:"clo",name:"C-Lo",blurb:"Two players, one pot. Throw off the
     [10,25,50,100].forEach(v=>{const x=document.createElement("button");x.className="o";x.textContent=v;
       x.setAttribute("aria-pressed",String(v===bet));x.disabled=phase!=="bet"||pot>0||v>W.chips;
       x.onclick=()=>{bet=v;renderBets()};betsEl.appendChild(x)})}
-  go.onclick=()=>{if(!ac)try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}play()};
-  q(".mute").onclick=e=>{muted=!muted;e.currentTarget.textContent="Sound: "+(muted?"off":"on")};show(".bd");show(".pd");renderBets();
+  go.onclick=()=>{if(!ac)try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  if(ac&&ac.state==="suspended")ac.resume();play()};
+  q(".mute").onclick=e=>{muted=!muted;e.currentTarget.textContent="Sound: "+(muted?"off":"on")};
+  q(".fxb").onclick=e=>{fx=!fx;e.currentTarget.textContent="Motion: "+(fx?"on":"off")};show(".bd");show(".pd");renderBets();
   return()=>{alive=false}
 }});
 
